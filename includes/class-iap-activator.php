@@ -14,6 +14,7 @@ class IAP_Activator {
         $table_integrations = $wpdb->prefix . 'iap_integrations';
         $table_feeds = $wpdb->prefix . 'iap_feeds';
         $table_logs = $wpdb->prefix . 'iap_logs';
+        $table_processed = $wpdb->prefix . 'iap_processed_items';
         
         $sql_integrations = "CREATE TABLE IF NOT EXISTS $table_integrations (
             id bigint(20) NOT NULL AUTO_INCREMENT,
@@ -22,6 +23,7 @@ class IAP_Activator {
             ai_provider varchar(50) NOT NULL,
             ai_config longtext,
             feed_ids longtext,
+            custom_prompt longtext,
             status varchar(20) DEFAULT 'active',
             schedule_frequency varchar(50) DEFAULT 'hourly',
             last_run datetime,
@@ -48,19 +50,55 @@ class IAP_Activator {
             action varchar(50) NOT NULL,
             status varchar(20) NOT NULL,
             message longtext,
+            sources longtext,
             created_at datetime DEFAULT CURRENT_TIMESTAMP,
             PRIMARY KEY (id)
+        ) $charset_collate;";
+        
+        $sql_processed = "CREATE TABLE IF NOT EXISTS $table_processed (
+            id bigint(20) NOT NULL AUTO_INCREMENT,
+            feed_item_url varchar(500) NOT NULL,
+            feed_item_title varchar(500) NOT NULL,
+            feed_id bigint(20) NOT NULL,
+            integration_id bigint(20) NOT NULL,
+            post_id bigint(20),
+            processed_at datetime DEFAULT CURRENT_TIMESTAMP,
+            PRIMARY KEY (id),
+            UNIQUE KEY unique_feed_item (feed_item_url, integration_id),
+            KEY idx_feed_id (feed_id),
+            KEY idx_integration_id (integration_id)
         ) $charset_collate;";
         
         require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
         dbDelta($sql_integrations);
         dbDelta($sql_feeds);
         dbDelta($sql_logs);
+        dbDelta($sql_processed);
         
+        self::migrate_existing_tables();
         self::insert_default_feeds();
         
         if (!wp_next_scheduled('iap_run_integrations')) {
             wp_schedule_event(time(), 'hourly', 'iap_run_integrations');
+        }
+    }
+    
+    private static function migrate_existing_tables() {
+        global $wpdb;
+        
+        $table_integrations = $wpdb->prefix . 'iap_integrations';
+        $table_logs = $wpdb->prefix . 'iap_logs';
+        
+        // Verificar e adicionar coluna custom_prompt na tabela de integrações
+        $column_exists = $wpdb->get_results("SHOW COLUMNS FROM `{$table_integrations}` LIKE 'custom_prompt'");
+        if (empty($column_exists)) {
+            $wpdb->query("ALTER TABLE `{$table_integrations}` ADD COLUMN `custom_prompt` LONGTEXT AFTER `feed_ids`");
+        }
+        
+        // Verificar e adicionar coluna sources na tabela de logs
+        $column_exists = $wpdb->get_results("SHOW COLUMNS FROM `{$table_logs}` LIKE 'sources'");
+        if (empty($column_exists)) {
+            $wpdb->query("ALTER TABLE `{$table_logs}` ADD COLUMN `sources` LONGTEXT AFTER `message`");
         }
     }
     

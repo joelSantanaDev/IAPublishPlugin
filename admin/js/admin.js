@@ -47,6 +47,7 @@
                     $('input[name="feed_ids[]"][value="' + feedId + '"]').prop('checked', true);
                 });
                 
+                $('#integration-custom-prompt').val(integration.custom_prompt || '');
                 $('#integration-status').val(integration.status);
                 $('#integration-schedule').val(integration.schedule_frequency);
                 
@@ -82,6 +83,7 @@
                 feed_ids: $('input[name="feed_ids[]"]:checked').map(function() {
                     return $(this).val();
                 }).get(),
+                custom_prompt: $('#integration-custom-prompt').val(),
                 status: $('#integration-status').val(),
                 schedule_frequency: $('#integration-schedule').val()
             };

@@ -153,6 +153,16 @@ if (!defined('ABSPATH')) {
                 </tr>
                 
                 <tr>
+                    <th><label for="integration-custom-prompt">Prompt Personalizado</label></th>
+                    <td>
+                        <textarea id="integration-custom-prompt" name="custom_prompt" rows="6" class="large-text" placeholder="Adicione instruções personalizadas para a IA (opcional)&#10;&#10;Exemplo:&#10;- Foque em aspectos técnicos&#10;- Inclua dados estatísticos quando disponível&#10;- Adicione uma seção de FAQ ao final&#10;- Use tom informal e acessível"></textarea>
+                        <p class="description">
+                            <strong>Dica:</strong> Use este campo para personalizar o conteúdo gerado. A IA já está configurada para criar artigos estruturados com H2, listas e parágrafos. Aqui você pode adicionar instruções específicas como tom de voz, tópicos extras, formato especial, etc.
+                        </p>
+                    </td>
+                </tr>
+                
+                <tr>
                     <th><label for="integration-status">Status</label></th>
                     <td>
                         <select id="integration-status" name="status">
