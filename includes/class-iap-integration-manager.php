@@ -39,6 +39,8 @@ class IAP_Integration_Manager {
             'ai_config' => json_encode($data['ai_config']),
             'feed_ids' => json_encode($data['feed_ids']),
             'custom_prompt' => isset($data['custom_prompt']) ? sanitize_textarea_field($data['custom_prompt']) : '',
+            'feed_items_count' => isset($data['feed_items_count']) ? intval($data['feed_items_count']) : 3,
+            'feed_order' => isset($data['feed_order']) ? sanitize_text_field($data['feed_order']) : 'recent',
             'status' => isset($data['status']) ? sanitize_text_field($data['status']) : 'active',
             'schedule_frequency' => isset($data['schedule_frequency']) ? sanitize_text_field($data['schedule_frequency']) : 'hourly'
         ];
@@ -71,7 +73,10 @@ class IAP_Integration_Manager {
             return ['success' => false, 'message' => 'Nenhum feed configurado'];
         }
         
-        $feed_items = $this->feed_manager->fetch_multiple_feeds($feed_ids, 3, $integration_id);
+        $items_count = isset($integration->feed_items_count) ? intval($integration->feed_items_count) : 3;
+        $feed_order = isset($integration->feed_order) ? $integration->feed_order : 'recent';
+        
+        $feed_items = $this->feed_manager->fetch_multiple_feeds($feed_ids, $items_count, $integration_id, $feed_order);
         
         if (empty($feed_items)) {
             return ['success' => false, 'message' => 'Nenhum item encontrado nos feeds (todos já foram processados ou feeds vazios)'];

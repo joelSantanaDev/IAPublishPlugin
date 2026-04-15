@@ -24,6 +24,8 @@ class IAP_Activator {
             ai_config longtext,
             feed_ids longtext,
             custom_prompt longtext,
+            feed_items_count int(11) DEFAULT 3,
+            feed_order varchar(20) DEFAULT 'recent',
             status varchar(20) DEFAULT 'active',
             schedule_frequency varchar(50) DEFAULT 'hourly',
             last_run datetime,
@@ -93,6 +95,18 @@ class IAP_Activator {
         $column_exists = $wpdb->get_results("SHOW COLUMNS FROM `{$table_integrations}` LIKE 'custom_prompt'");
         if (empty($column_exists)) {
             $wpdb->query("ALTER TABLE `{$table_integrations}` ADD COLUMN `custom_prompt` LONGTEXT AFTER `feed_ids`");
+        }
+        
+        // Verificar e adicionar coluna feed_items_count
+        $column_exists = $wpdb->get_results("SHOW COLUMNS FROM `{$table_integrations}` LIKE 'feed_items_count'");
+        if (empty($column_exists)) {
+            $wpdb->query("ALTER TABLE `{$table_integrations}` ADD COLUMN `feed_items_count` INT(11) DEFAULT 3 AFTER `custom_prompt`");
+        }
+        
+        // Verificar e adicionar coluna feed_order
+        $column_exists = $wpdb->get_results("SHOW COLUMNS FROM `{$table_integrations}` LIKE 'feed_order'");
+        if (empty($column_exists)) {
+            $wpdb->query("ALTER TABLE `{$table_integrations}` ADD COLUMN `feed_order` VARCHAR(20) DEFAULT 'recent' AFTER `feed_items_count`");
         }
         
         // Verificar e adicionar coluna sources na tabela de logs

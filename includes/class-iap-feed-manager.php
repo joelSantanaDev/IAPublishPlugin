@@ -71,7 +71,7 @@ class IAP_Feed_Manager {
         return ['success' => true, 'items' => $items];
     }
     
-    public function fetch_multiple_feeds($feed_ids, $limit_per_feed = 5, $integration_id = null) {
+    public function fetch_multiple_feeds($feed_ids, $limit_per_feed = 5, $integration_id = null, $order = 'recent') {
         $all_items = [];
         
         foreach ($feed_ids as $feed_id) {
@@ -101,9 +101,22 @@ class IAP_Feed_Manager {
             $wpdb->update($table, ['last_fetch' => current_time('mysql')], ['id' => $feed_id]);
         }
         
-        usort($all_items, function($a, $b) {
-            return strtotime($b['date']) - strtotime($a['date']);
-        });
+        // Ordenar conforme configuração
+        if ($order === 'random') {
+            shuffle($all_items);
+            error_log('IAP: Itens embaralhados aleatoriamente');
+        } else {
+            // Ordenar por data (mais recentes primeiro)
+            usort($all_items, function($a, $b) {
+                return strtotime($b['date']) - strtotime($a['date']);
+            });
+            error_log('IAP: Itens ordenados por data (mais recentes primeiro)');
+        }
+        
+        // Limitar quantidade de itens
+        if (count($all_items) > $limit_per_feed) {
+            $all_items = array_slice($all_items, 0, $limit_per_feed);
+        }
         
         return $all_items;
     }

@@ -140,6 +140,9 @@ class IAP_Admin {
                 'max_tokens' => intval($_POST['max_tokens'])
             ],
             'feed_ids' => isset($_POST['feed_ids']) ? array_map('intval', $_POST['feed_ids']) : [],
+            'custom_prompt' => isset($_POST['custom_prompt']) ? sanitize_textarea_field($_POST['custom_prompt']) : '',
+            'feed_items_count' => isset($_POST['feed_items_count']) ? intval($_POST['feed_items_count']) : 3,
+            'feed_order' => isset($_POST['feed_order']) ? sanitize_text_field($_POST['feed_order']) : 'recent',
             'status' => sanitize_text_field($_POST['status']),
             'schedule_frequency' => sanitize_text_field($_POST['schedule_frequency'])
         ];

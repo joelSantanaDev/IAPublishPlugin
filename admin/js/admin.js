@@ -48,6 +48,8 @@
                 });
                 
                 $('#integration-custom-prompt').val(integration.custom_prompt || '');
+                $('#integration-items-count').val(integration.feed_items_count || 3);
+                $('#integration-feed-order').val(integration.feed_order || 'recent');
                 $('#integration-status').val(integration.status);
                 $('#integration-schedule').val(integration.schedule_frequency);
                 
@@ -84,6 +86,8 @@
                     return $(this).val();
                 }).get(),
                 custom_prompt: $('#integration-custom-prompt').val(),
+                feed_items_count: $('#integration-items-count').val(),
+                feed_order: $('#integration-feed-order').val(),
                 status: $('#integration-status').val(),
                 schedule_frequency: $('#integration-schedule').val()
             };

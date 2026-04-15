@@ -163,6 +163,30 @@ if (!defined('ABSPATH')) {
                 </tr>
                 
                 <tr>
+                    <th><label for="integration-items-count">Quantidade de Notícias</label></th>
+                    <td>
+                        <input type="number" id="integration-items-count" name="feed_items_count" min="1" max="10" value="3" class="small-text">
+                        <p class="description">
+                            Quantas notícias dos feeds devem ser usadas para criar o post? (1 = post único, 3+ = compilado)
+                        </p>
+                    </td>
+                </tr>
+                
+                <tr>
+                    <th><label for="integration-feed-order">Ordem de Seleção</label></th>
+                    <td>
+                        <select id="integration-feed-order" name="feed_order">
+                            <option value="recent">Mais Recentes</option>
+                            <option value="random">Aleatório</option>
+                        </select>
+                        <p class="description">
+                            <strong>Mais Recentes:</strong> Pega as notícias mais novas primeiro (ordem cronológica)<br>
+                            <strong>Aleatório:</strong> Escolhe notícias aleatoriamente (mais variedade)
+                        </p>
+                    </td>
+                </tr>
+                
+                <tr>
                     <th><label for="integration-status">Status</label></th>
                     <td>
                         <select id="integration-status" name="status">
