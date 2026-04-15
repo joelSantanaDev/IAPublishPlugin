@@ -330,4 +330,66 @@ class IAP_Admin {
             wp_send_json_error(['message' => 'Erro: ' . $e->getMessage()]);
         }
     }
+    
+    public function ajax_list_gemini_models() {
+        try {
+            check_ajax_referer('iap_ajax_nonce', 'nonce');
+            
+            if (!current_user_can('manage_options')) {
+                wp_send_json_error(['message' => 'Permissão negada']);
+                return;
+            }
+            
+            $api_key = sanitize_text_field($_POST['api_key']);
+            
+            if (empty($api_key)) {
+                wp_send_json_error(['message' => 'API Key não fornecida']);
+                return;
+            }
+            
+            $url = 'https://generativelanguage.googleapis.com/v1beta/models?key=' . $api_key;
+            
+            $response = wp_remote_get($url, ['timeout' => 30]);
+            
+            if (is_wp_error($response)) {
+                wp_send_json_error(['message' => 'Erro na requisição: ' . $response->get_error_message()]);
+                return;
+            }
+            
+            $http_code = wp_remote_retrieve_response_code($response);
+            $body = json_decode(wp_remote_retrieve_body($response), true);
+            
+            if ($http_code !== 200) {
+                $error_msg = isset($body['error']['message']) ? $body['error']['message'] : 'Erro desconhecido';
+                wp_send_json_error(['message' => 'HTTP ' . $http_code . ': ' . $error_msg]);
+                return;
+            }
+            
+            if (!isset($body['models']) || !is_array($body['models'])) {
+                wp_send_json_error(['message' => 'Resposta inválida da API']);
+                return;
+            }
+            
+            $models_list = "Modelos disponíveis:\n\n";
+            foreach ($body['models'] as $model) {
+                $name = isset($model['name']) ? str_replace('models/', '', $model['name']) : 'N/A';
+                $display_name = isset($model['displayName']) ? $model['displayName'] : '';
+                $supported = isset($model['supportedGenerationMethods']) ? implode(', ', $model['supportedGenerationMethods']) : '';
+                
+                $models_list .= "• {$name}\n";
+                if ($display_name) {
+                    $models_list .= "  Nome: {$display_name}\n";
+                }
+                if ($supported) {
+                    $models_list .= "  Suporta: {$supported}\n";
+                }
+                $models_list .= "\n";
+            }
+            
+            wp_send_json_success(['models' => $models_list]);
+            
+        } catch (Exception $e) {
+            wp_send_json_error(['message' => 'Erro: ' . $e->getMessage()]);
+        }
+    }
 }

@@ -72,7 +72,7 @@ class IAP_AI_Manager {
                 'Content-Type' => 'application/json'
             ],
             'body' => json_encode([
-                'model' => isset($config['model']) ? $config['model'] : 'gpt-4o-mini',
+                'model' => (isset($config['model']) && !empty($config['model'])) ? $config['model'] : 'gpt-4o-mini',
                 'messages' => [
                     ['role' => 'user', 'content' => 'Test']
                 ],
@@ -108,7 +108,7 @@ class IAP_AI_Manager {
                 'Content-Type' => 'application/json'
             ],
             'body' => json_encode([
-                'model' => isset($config['model']) ? $config['model'] : 'claude-3-5-haiku-20241022',
+                'model' => (isset($config['model']) && !empty($config['model'])) ? $config['model'] : 'claude-3-5-haiku-20241022',
                 'messages' => [
                     ['role' => 'user', 'content' => 'Test']
                 ],
@@ -137,7 +137,7 @@ class IAP_AI_Manager {
             return ['success' => false, 'message' => 'API Key não fornecida'];
         }
         
-        $model = isset($config['model']) ? $config['model'] : 'gemini-2.0-flash-exp';
+        $model = isset($config['model']) && !empty($config['model']) ? $config['model'] : 'gemini-2.0-flash';
         $url = 'https://generativelanguage.googleapis.com/v1beta/models/' . $model . ':generateContent?key=' . $api_key;
         
         $response = wp_remote_post($url, [
@@ -157,11 +157,22 @@ class IAP_AI_Manager {
             return ['success' => false, 'message' => $response->get_error_message()];
         }
         
-        $body = json_decode(wp_remote_retrieve_body($response), true);
+        $http_code = wp_remote_retrieve_response_code($response);
+        $raw_body = wp_remote_retrieve_body($response);
+        
+        error_log('Google Test HTTP Code: ' . $http_code);
+        error_log('Google Test Raw Body: ' . $raw_body);
+        
+        $body = json_decode($raw_body, true);
         $this->log_api_response('Google Test', $body);
         
+        if ($body === null) {
+            return ['success' => false, 'message' => 'Resposta vazia ou JSON inválido. HTTP Code: ' . $http_code . '. Raw: ' . substr($raw_body, 0, 500)];
+        }
+        
         if (isset($body['error'])) {
-            return ['success' => false, 'message' => $body['error']['message']];
+            $error_msg = isset($body['error']['message']) ? $body['error']['message'] : json_encode($body['error']);
+            return ['success' => false, 'message' => 'Erro da API: ' . $error_msg];
         }
         
         return ['success' => true, 'message' => 'Conexão bem-sucedida com Google Gemini'];
@@ -180,7 +191,7 @@ class IAP_AI_Manager {
                 'Content-Type' => 'application/json'
             ],
             'body' => json_encode([
-                'model' => isset($config['model']) ? $config['model'] : 'llama-3.3-70b-versatile',
+                'model' => (isset($config['model']) && !empty($config['model'])) ? $config['model'] : 'llama-3.3-70b-versatile',
                 'messages' => [
                     ['role' => 'user', 'content' => 'Test']
                 ],
@@ -211,7 +222,7 @@ class IAP_AI_Manager {
                 'Content-Type' => 'application/json'
             ],
             'body' => json_encode([
-                'model' => isset($config['model']) ? $config['model'] : 'gpt-4o-mini',
+                'model' => (isset($config['model']) && !empty($config['model'])) ? $config['model'] : 'gpt-4o-mini',
                 'messages' => [
                     ['role' => 'system', 'content' => 'Você é um jornalista especializado em criar notícias originais baseadas em múltiplas fontes.'],
                     ['role' => 'user', 'content' => $prompt]
@@ -249,7 +260,7 @@ class IAP_AI_Manager {
                 'Content-Type' => 'application/json'
             ],
             'body' => json_encode([
-                'model' => isset($config['model']) ? $config['model'] : 'claude-3-5-haiku-20241022',
+                'model' => (isset($config['model']) && !empty($config['model'])) ? $config['model'] : 'claude-3-5-haiku-20241022',
                 'system' => 'Você é um jornalista especializado em criar notícias originais baseadas em múltiplas fontes.',
                 'messages' => [
                     ['role' => 'user', 'content' => $prompt]
@@ -279,19 +290,19 @@ class IAP_AI_Manager {
     
     private function generate_google($config, $prompt) {
         $api_key = isset($config['api_key']) ? $config['api_key'] : '';
-        $model = isset($config['model']) ? $config['model'] : 'gemini-2.0-flash-exp';
+        $model = isset($config['model']) && !empty($config['model']) ? $config['model'] : 'gemini-2.0-flash';
         $url = 'https://generativelanguage.googleapis.com/v1beta/models/' . $model . ':generateContent?key=' . $api_key;
         
         $system_instruction = 'Você é um jornalista especializado em criar notícias originais baseadas em múltiplas fontes.';
+        $full_prompt = $system_instruction . "\n\n" . $prompt;
         
         $response = wp_remote_post($url, [
             'headers' => [
                 'Content-Type' => 'application/json'
             ],
             'body' => json_encode([
-                'system_instruction' => ['parts' => [['text' => $system_instruction]]],
                 'contents' => [
-                    ['parts' => [['text' => $prompt]]]
+                    ['parts' => [['text' => $full_prompt]]]
                 ],
                 'generationConfig' => [
                     'temperature' => isset($config['temperature']) ? floatval($config['temperature']) : 0.7,
@@ -306,18 +317,30 @@ class IAP_AI_Manager {
             return ['success' => false, 'message' => $response->get_error_message()];
         }
         
-        $body = json_decode(wp_remote_retrieve_body($response), true);
+        $http_code = wp_remote_retrieve_response_code($response);
+        $raw_body = wp_remote_retrieve_body($response);
+        
+        error_log('Google API HTTP Code: ' . $http_code);
+        error_log('Google API Raw Body: ' . $raw_body);
+        
+        $body = json_decode($raw_body, true);
         $this->log_api_response('Google Generate', $body);
         
+        if ($body === null) {
+            return ['success' => false, 'message' => 'Resposta vazia ou JSON inválido da API. HTTP Code: ' . $http_code . '. Raw: ' . substr($raw_body, 0, 200)];
+        }
+        
         if (isset($body['error'])) {
-            return ['success' => false, 'message' => $body['error']['message']];
+            $error_msg = isset($body['error']['message']) ? $body['error']['message'] : json_encode($body['error']);
+            return ['success' => false, 'message' => 'Erro da API: ' . $error_msg];
         }
         
         if (isset($body['candidates'][0]['content']['parts'][0]['text'])) {
             return ['success' => true, 'content' => $body['candidates'][0]['content']['parts'][0]['text']];
         }
         
-        return ['success' => false, 'message' => 'Resposta inválida da API. Estrutura: ' . json_encode(array_keys($body))];
+        $structure = is_array($body) ? json_encode(array_keys($body)) : 'não é array';
+        return ['success' => false, 'message' => 'Resposta inválida da API. Estrutura: ' . $structure . '. HTTP: ' . $http_code];
     }
     
     private function generate_groq($config, $prompt) {
@@ -329,7 +352,7 @@ class IAP_AI_Manager {
                 'Content-Type' => 'application/json'
             ],
             'body' => json_encode([
-                'model' => isset($config['model']) ? $config['model'] : 'llama-3.3-70b-versatile',
+                'model' => (isset($config['model']) && !empty($config['model'])) ? $config['model'] : 'llama-3.3-70b-versatile',
                 'messages' => [
                     ['role' => 'system', 'content' => 'Você é um jornalista especializado em criar notícias originais baseadas em múltiplas fontes.'],
                     ['role' => 'user', 'content' => $prompt]
