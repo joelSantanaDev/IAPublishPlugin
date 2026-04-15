@@ -1,0 +1,175 @@
+.iap-admin {
+    margin: 20px 0;
+}
+
+.iap-admin h1 {
+    margin-bottom: 20px;
+}
+
+.iap-status {
+    padding: 3px 8px;
+    border-radius: 3px;
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+.iap-status-active {
+    background-color: #d4edda;
+    color: #155724;
+}
+
+.iap-status-inactive {
+    background-color: #f8d7da;
+    color: #721c24;
+}
+
+.iap-status-success {
+    background-color: #d4edda;
+    color: #155724;
+}
+
+.iap-status-error {
+    background-color: #f8d7da;
+    color: #721c24;
+}
+
+.iap-modal {
+    display: none;
+    position: fixed;
+    z-index: 100000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    overflow: auto;
+    background-color: rgba(0, 0, 0, 0.5);
+}
+
+.iap-modal-content {
+    background-color: #fefefe;
+    margin: 5% auto;
+    padding: 30px;
+    border: 1px solid #888;
+    width: 80%;
+    max-width: 800px;
+    border-radius: 5px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    max-height: 85vh;
+    overflow-y: auto;
+}
+
+.iap-modal-close {
+    color: #aaa;
+    float: right;
+    font-size: 28px;
+    font-weight: bold;
+    cursor: pointer;
+    line-height: 20px;
+}
+
+.iap-modal-close:hover,
+.iap-modal-close:focus {
+    color: #000;
+}
+
+.iap-modal h2 {
+    margin-top: 0;
+    margin-bottom: 20px;
+}
+
+.iap-admin .button .dashicons {
+    line-height: 28px;
+    vertical-align: middle;
+}
+
+.iap-admin .button-small .dashicons {
+    font-size: 16px;
+    line-height: 26px;
+}
+
+.iap-admin table.wp-list-table {
+    margin-top: 20px;
+}
+
+.iap-admin table.wp-list-table th,
+.iap-admin table.wp-list-table td {
+    vertical-align: middle;
+}
+
+.iap-loading {
+    display: inline-block;
+    width: 16px;
+    height: 16px;
+    border: 2px solid #f3f3f3;
+    border-top: 2px solid #3498db;
+    border-radius: 50%;
+    animation: iap-spin 1s linear infinite;
+    vertical-align: middle;
+    margin-left: 5px;
+}
+
+@keyframes iap-spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+.iap-notice {
+    padding: 10px 15px;
+    margin: 15px 0;
+    border-left: 4px solid;
+    border-radius: 3px;
+}
+
+.iap-notice-success {
+    background-color: #d4edda;
+    border-color: #28a745;
+    color: #155724;
+}
+
+.iap-notice-error {
+    background-color: #f8d7da;
+    border-color: #dc3545;
+    color: #721c24;
+}
+
+.iap-notice-info {
+    background-color: #d1ecf1;
+    border-color: #17a2b8;
+    color: #0c5460;
+}
+
+#integration-feeds label {
+    display: block;
+    margin-bottom: 8px;
+    padding: 8px;
+    background: #f9f9f9;
+    border-radius: 3px;
+}
+
+#integration-feeds label:hover {
+    background: #f0f0f0;
+}
+
+#integration-feeds input[type="checkbox"] {
+    margin-right: 8px;
+}
+
+.form-table th {
+    width: 200px;
+}
+
+.form-table input[type="text"],
+.form-table input[type="password"],
+.form-table input[type="url"],
+.form-table input[type="number"],
+.form-table select {
+    width: 100%;
+    max-width: 500px;
+}
+
+.form-table .description {
+    font-size: 13px;
+    color: #666;
+    margin-top: 5px;
+}
