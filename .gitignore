@@ -1,0 +1,43 @@
+# Build directory
+build/
+releases/
+
+# Logs
+*.log
+debug.log
+error_log
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*.sublime-*
+
+# Temporary files
+*.tmp
+*~
+*.bak
+*.cache
+
+# Node modules (se usar npm no futuro)
+node_modules/
+package-lock.json
+
+# Composer (se usar no futuro)
+vendor/
+composer.lock
+
+# WordPress específico
+wp-config-local.php
+.htaccess
+
+# Backups
+*.sql
+*.sql.gz
+*.zip.backup

@@ -11,9 +11,17 @@ O IA Publish Plugin permite criar notícias originais automaticamente usando IA,
 - **Múltiplos Provedores de IA**: Suporte para OpenAI, Anthropic (Claude), Google (Gemini) e Groq
 - **Gerenciamento de Feeds RSS**: Adicione e gerencie feeds de diferentes fontes
 - **Integrações Personalizadas**: Configure integrações específicas por categoria
+- **Prompt Customizável**: Personalize instruções para a IA em cada integração
+- **Controle de Quantidade**: Escolha quantas notícias usar (1 a 10)
+- **Ordem Configurável**: Selecione notícias mais recentes ou aleatoriamente
+- **Anti-Duplicatas**: Sistema inteligente que evita reutilizar notícias já processadas
+- **Importação de Imagens**: Baixa automaticamente imagens dos feeds em alta qualidade
+- **Conversão Markdown→HTML**: Suporte automático para formatação Markdown
+- **Rastreamento de Fontes**: Logs detalhados mostrando quais notícias foram usadas
 - **Execução Automática**: Agende a geração automática de conteúdo (horária, diária, etc.)
 - **Logs Detalhados**: Acompanhe todas as ações e gerações de conteúdo
 - **Interface Intuitiva**: Painel administrativo completo no WordPress
+- **Debug Integrado**: Visualize logs do WordPress direto no admin
 
 ## 🚀 Instalação
 
@@ -49,6 +57,9 @@ Feeds padrão já incluídos:
    - **Temperature**: Controle de criatividade (0-2)
    - **Max Tokens**: Tamanho máximo da resposta
    - **Feeds RSS**: Selecione os feeds que serão usados como fonte
+   - **Prompt Personalizado**: Instruções customizadas para a IA (opcional)
+   - **Quantidade de Notícias**: Quantas notícias usar (1-10, padrão: 3)
+   - **Ordem de Seleção**: Mais recentes ou aleatório
    - **Status**: Ativo/Inativo
    - **Frequência**: Horária, duas vezes ao dia ou diariamente
 
@@ -81,11 +92,12 @@ Antes de salvar, use o botão **Testar Conexão** para verificar se suas credenc
 
 ## 📊 Estrutura do Banco de Dados
 
-O plugin cria 3 tabelas:
+O plugin cria 4 tabelas:
 
 - `wp_iap_integrations`: Armazena configurações de integrações
 - `wp_iap_feeds`: Gerencia feeds RSS
-- `wp_iap_logs`: Registra todas as ações e execuções
+- `wp_iap_logs`: Registra todas as ações e execuções (com fontes usadas)
+- `wp_iap_processed_items`: Rastreia notícias já processadas (anti-duplicatas)
 
 ## 🔒 Segurança
 
@@ -144,10 +156,19 @@ Joel Santana - [GitHub](https://github.com/joelSantanaDev)
 
 ## 🔄 Changelog
 
-### 1.0.0
-- Lançamento inicial
-- Suporte para 4 provedores de IA
-- Sistema de feeds RSS
-- Interface administrativa completa
-- Sistema de logs
-- Execução automática agendada
+### 1.0.0 (2026-04-16)
+- ✅ Lançamento inicial
+- ✅ Suporte para 4 provedores de IA (OpenAI, Anthropic, Google Gemini, Groq)
+- ✅ Sistema de feeds RSS com feeds padrão
+- ✅ Interface administrativa completa
+- ✅ Sistema de logs detalhados
+- ✅ Execução automática agendada
+- ✅ Prompt customizável por integração
+- ✅ Controle de quantidade de notícias (1-10)
+- ✅ Seleção de ordem (recente/aleatório)
+- ✅ Sistema anti-duplicatas
+- ✅ Importação automática de imagens em alta qualidade
+- ✅ Conversão Markdown para HTML
+- ✅ Rastreamento de fontes nos logs
+- ✅ Página de debug integrada
+- ✅ Migração automática de banco de dados
