@@ -217,19 +217,23 @@ class IAP_Integration_Manager {
         }
         
         $prompt .= "Instruções:\n";
-        $prompt .= "- Título original e atraente\n";
-        $prompt .= "- Mínimo 400 palavras em HTML\n";
+        $prompt .= "- Crie um título original e atraente\n";
+        $prompt .= "- Sugira 5 tags relevantes (palavras-chave principais do tema)\n";
+        $prompt .= "- Escreva o conteúdo com mínimo 400 palavras em HTML\n";
         $prompt .= "- Use <h2> para seções, <p> para parágrafos, <ul>/<ol> para listas, <strong> para destaques\n";
         $prompt .= "- Tom jornalístico profissional\n";
         $prompt .= "- Combine as fontes de forma coerente\n";
         $prompt .= "- Conteúdo 100% original\n";
-        $prompt .= "- Sugira 5 tags relevantes (palavras-chave principais do tema)\n";
         
         if (!empty($custom_prompt)) {
             $prompt .= "\nPersonalização: " . $custom_prompt . "\n";
         }
         
-        $prompt .= "\nFormato:\nTÍTULO: [título]\n\nTAGS: [tag1, tag2, tag3, tag4, tag5]\n\nCONTEÚDO:\n[HTML com <h2>, <p>, <ul>, <strong>]";
+        $prompt .= "\n⚠️ IMPORTANTE - Formato de Resposta:\n\n";
+        $prompt .= "TÍTULO: [apenas o título, sem repetir no conteúdo]\n\n";
+        $prompt .= "TAGS: [tag1, tag2, tag3, tag4, tag5]\n\n";
+        $prompt .= "CONTEÚDO:\n";
+        $prompt .= "[Comece direto com o HTML do conteúdo. NÃO repita o título aqui. NÃO inclua as tags aqui. Apenas o corpo do artigo em HTML]";
         
         return $prompt;
     }
