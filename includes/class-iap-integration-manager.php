@@ -164,7 +164,16 @@ class IAP_Integration_Manager {
         $featured_image_id = $this->import_featured_image($post_id, $feed_items, $integration->fallback_image_id);
         
         // Adicionar meta SEO (Rank Math)
-        $this->add_seo_meta($post_id, $post_data['title'], $post_data['content'], $featured_image_id, $tags);
+        $this->add_seo_meta(
+            $post_id, 
+            $post_data['title'], 
+            $post_data['content'], 
+            $featured_image_id, 
+            $tags,
+            $post_data['meta_title'],
+            $post_data['meta_description'],
+            $post_data['focus_keyword']
+        );
         
         // Marcar todos os itens usados como processados
         foreach ($feed_items as $item) {
@@ -231,6 +240,9 @@ class IAP_Integration_Manager {
         
         $prompt .= "\n⚠️ IMPORTANTE - Formato de Resposta:\n\n";
         $prompt .= "TÍTULO: [apenas o título, sem repetir no conteúdo]\n\n";
+        $prompt .= "META_TÍTULO: [versão otimizada do título para SEO, máximo 60 caracteres]\n\n";
+        $prompt .= "META_DESCRIÇÃO: [resumo atraente do conteúdo para SEO, máximo 160 caracteres]\n\n";
+        $prompt .= "FOCUS_KEYWORD: [palavra-chave principal do artigo, 1-3 palavras]\n\n";
         $prompt .= "TAGS: [tag1, tag2, tag3, tag4, tag5]\n\n";
         $prompt .= "CONTEÚDO:\n";
         $prompt .= "[Comece direto com o HTML do conteúdo. NÃO repita o título aqui. NÃO inclua as tags aqui. Apenas o corpo do artigo em HTML]";
@@ -242,12 +254,30 @@ class IAP_Integration_Manager {
         $title = '';
         $body = '';
         $tags = [];
+        $meta_title = '';
+        $meta_description = '';
+        $focus_keyword = '';
         
         // Tentar diferentes formatos de resposta
         
-        // Formato 1: TÍTULO: ... TAGS: ... CONTEÚDO: ...
+        // Formato 1: TÍTULO: ... META_TÍTULO: ... META_DESCRIÇÃO: ... FOCUS_KEYWORD: ... TAGS: ... CONTEÚDO: ...
         if (preg_match('/TÍTULO:\s*(.+?)(?:\n|$)/i', $content, $title_match)) {
             $title = trim($title_match[1]);
+            
+            // Extrair meta título
+            if (preg_match('/META_TÍTULO:\s*(.+?)(?:\n|$)/i', $content, $meta_title_match)) {
+                $meta_title = trim($meta_title_match[1]);
+            }
+            
+            // Extrair meta descrição
+            if (preg_match('/META_DESCRIÇÃO:\s*(.+?)(?:\n|$)/i', $content, $meta_desc_match)) {
+                $meta_description = trim($meta_desc_match[1]);
+            }
+            
+            // Extrair focus keyword
+            if (preg_match('/FOCUS_KEYWORD:\s*(.+?)(?:\n|$)/i', $content, $focus_match)) {
+                $focus_keyword = trim($focus_match[1]);
+            }
             
             // Extrair tags se existirem
             if (preg_match('/TAGS:\s*(.+?)(?:\n|CONTEÚDO:)/is', $content, $tags_match)) {
@@ -300,7 +330,10 @@ class IAP_Integration_Manager {
         return [
             'title' => trim($title),
             'content' => trim($body),
-            'tags' => $tags
+            'tags' => $tags,
+            'meta_title' => trim($meta_title),
+            'meta_description' => trim($meta_description),
+            'focus_keyword' => trim($focus_keyword)
         ];
     }
     
@@ -436,21 +469,20 @@ class IAP_Integration_Manager {
         }
     }
     
-    private function add_seo_meta($post_id, $title, $content, $featured_image_id = null, $tags = []) {
+    private function add_seo_meta($post_id, $title, $content, $featured_image_id = null, $tags = [], $ai_meta_title = '', $ai_meta_description = '', $ai_focus_keyword = '') {
         // Verificar se Rank Math está ativo
         if (!class_exists('RankMath')) {
             error_log('IAP: Rank Math não está instalado/ativo - pulando SEO');
             return;
         }
         
-        // Gerar meta título (máx 60 caracteres)
-        $meta_title = $this->generate_meta_title($title);
+        // Usar dados da IA se disponíveis, senão gerar
+        $meta_title = !empty($ai_meta_title) ? $ai_meta_title : $this->generate_meta_title($title);
+        $meta_description = !empty($ai_meta_description) ? $ai_meta_description : $this->generate_meta_description($content);
+        $focus_keyword = !empty($ai_focus_keyword) ? $ai_focus_keyword : $this->extract_focus_keyword($title);
         
-        // Gerar meta descrição (máx 160 caracteres)
-        $meta_description = $this->generate_meta_description($content);
-        
-        // Extrair focus keyword do título
-        $focus_keyword = $this->extract_focus_keyword($title);
+        // Log para debug
+        error_log("IAP: SEO Meta - Título: {$meta_title} | Descrição: {$meta_description} | Keyword: {$focus_keyword}");
         
         // Salvar meta dados do Rank Math
         update_post_meta($post_id, 'rank_math_title', $meta_title);
