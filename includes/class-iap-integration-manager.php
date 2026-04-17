@@ -219,11 +219,11 @@ class IAP_Integration_Manager {
         $prompt .= "Instruções:\n";
         $prompt .= "- Crie um título original e atraente\n";
         $prompt .= "- Sugira 5 tags relevantes (palavras-chave principais do tema)\n";
-        $prompt .= "- Escreva o conteúdo com mínimo 400 palavras em HTML\n";
-        $prompt .= "- Use <h2> para seções, <p> para parágrafos, <ul>/<ol> para listas, <strong> para destaques\n";
+        $prompt .= "- Escreva o conteúdo com mínimo 600 palavras em HTML\n";
+        $prompt .= "- Use títulos HTML(H1,H2,H3) para seções, <p> para parágrafos, <ul>/<ol> para listas, <strong> para destaques. Preciso que a semântica pro SEO seja importante.\n";
         $prompt .= "- Tom jornalístico profissional\n";
-        $prompt .= "- Combine as fontes de forma coerente\n";
-        $prompt .= "- Conteúdo 100% original\n";
+        $prompt .= "- Combine as fontes de forma coerente caso você consuma mais de 1 feed\n";
+        $prompt .= "- Conteúdo 100% original, mas não viaje tanto na criatividade.\n";
         
         if (!empty($custom_prompt)) {
             $prompt .= "\nPersonalização: " . $custom_prompt . "\n";
