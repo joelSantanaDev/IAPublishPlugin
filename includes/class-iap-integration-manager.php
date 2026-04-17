@@ -133,12 +133,16 @@ class IAP_Integration_Manager {
         error_log('Content preview: ' . substr($post_data['content'], 0, 200));
         error_log('=== End AI Response ===');
         
+        // Gerar tags automaticamente
+        $tags = $this->generate_tags($post_data['title'], $post_data['content'], $feed_items);
+        
         $post_id = wp_insert_post([
             'post_title' => $post_data['title'],
             'post_content' => $post_data['content'],
             'post_status' => 'draft',
             'post_category' => [$integration->category_id],
-            'post_author' => get_current_user_id()
+            'post_author' => get_current_user_id(),
+            'tags_input' => $tags
         ]);
         
         if (is_wp_error($post_id)) {
@@ -147,7 +151,10 @@ class IAP_Integration_Manager {
         }
         
         // Tentar importar imagem destacada de um dos feeds
-        $this->import_featured_image($post_id, $feed_items);
+        $featured_image_id = $this->import_featured_image($post_id, $feed_items);
+        
+        // Adicionar meta SEO (Rank Math)
+        $this->add_seo_meta($post_id, $post_data['title'], $post_data['content'], $featured_image_id);
         
         // Marcar todos os itens usados como processados
         foreach ($feed_items as $item) {
@@ -351,17 +358,19 @@ class IAP_Integration_Manager {
     private function import_featured_image($post_id, $feed_items) {
         // Procurar primeira imagem disponível nos feeds
         $image_url = null;
+        $image_title = '';
         
         foreach ($feed_items as $item) {
             if (!empty($item['image'])) {
                 $image_url = $item['image'];
+                $image_title = $item['title'];
                 break;
             }
         }
         
         if (empty($image_url)) {
             error_log('IAP: Nenhuma imagem encontrada nos feeds para o post #' . $post_id);
-            return false;
+            return null;
         }
         
         error_log('IAP: Tentando importar imagem: ' . $image_url);
@@ -372,11 +381,11 @@ class IAP_Integration_Manager {
         require_once(ABSPATH . 'wp-admin/includes/image.php');
         
         // Usar media_sideload_image para baixar e importar
-        $image_id = media_sideload_image($image_url, $post_id, null, 'id');
+        $image_id = media_sideload_image($image_url, $post_id, $image_title, 'id');
         
         if (is_wp_error($image_id)) {
             error_log('IAP: Erro ao importar imagem: ' . $image_id->get_error_message());
-            return false;
+            return null;
         }
         
         // Definir como imagem destacada
@@ -384,11 +393,130 @@ class IAP_Integration_Manager {
         
         if ($result) {
             error_log('IAP: Imagem destacada definida com sucesso para o post #' . $post_id . ' (attachment #' . $image_id . ')');
-            return true;
+            
+            // Adicionar SEO para a imagem
+            $this->add_image_seo($image_id, $image_title);
+            
+            return $image_id;
         } else {
             error_log('IAP: Falha ao definir imagem destacada para o post #' . $post_id);
-            return false;
+            return null;
         }
+    }
+    
+    private function add_seo_meta($post_id, $title, $content, $featured_image_id = null) {
+        // Verificar se Rank Math está ativo
+        if (!class_exists('RankMath')) {
+            error_log('IAP: Rank Math não está instalado/ativo - pulando SEO');
+            return;
+        }
+        
+        // Gerar meta título (máx 60 caracteres)
+        $meta_title = $this->generate_meta_title($title);
+        
+        // Gerar meta descrição (máx 160 caracteres)
+        $meta_description = $this->generate_meta_description($content);
+        
+        // Extrair focus keyword do título
+        $focus_keyword = $this->extract_focus_keyword($title);
+        
+        // Salvar meta dados do Rank Math
+        update_post_meta($post_id, 'rank_math_title', $meta_title);
+        update_post_meta($post_id, 'rank_math_description', $meta_description);
+        update_post_meta($post_id, 'rank_math_focus_keyword', $focus_keyword);
+        
+        // Configurações adicionais do Rank Math
+        update_post_meta($post_id, 'rank_math_robots', ['index', 'follow']);
+        update_post_meta($post_id, 'rank_math_advanced_robots', ['noimageindex' => 'off', 'noarchive' => 'off', 'nosnippet' => 'off']);
+        
+        // Se tem imagem destacada, adicionar Open Graph
+        if ($featured_image_id) {
+            update_post_meta($post_id, 'rank_math_facebook_enable_image_overlay', 'off');
+            update_post_meta($post_id, 'rank_math_facebook_image', wp_get_attachment_url($featured_image_id));
+            update_post_meta($post_id, 'rank_math_facebook_image_id', $featured_image_id);
+            update_post_meta($post_id, 'rank_math_twitter_enable_image_overlay', 'off');
+            update_post_meta($post_id, 'rank_math_twitter_image', wp_get_attachment_url($featured_image_id));
+            update_post_meta($post_id, 'rank_math_twitter_image_id', $featured_image_id);
+        }
+        
+        error_log("IAP: SEO meta adicionado ao post #{$post_id} - Keyword: {$focus_keyword}");
+    }
+    
+    private function generate_meta_title($title) {
+        // Limitar a 60 caracteres para SEO
+        $meta_title = strip_tags($title);
+        
+        if (strlen($meta_title) > 60) {
+            $meta_title = substr($meta_title, 0, 57) . '...';
+        }
+        
+        return $meta_title;
+    }
+    
+    private function generate_meta_description($content) {
+        // Extrair primeiro parágrafo ou primeiras 160 caracteres
+        $text = strip_tags($content);
+        $text = preg_replace('/\s+/', ' ', $text); // Remover espaços extras
+        $text = trim($text);
+        
+        if (strlen($text) > 160) {
+            $text = substr($text, 0, 157) . '...';
+        }
+        
+        return $text;
+    }
+    
+    private function extract_focus_keyword($title) {
+        // Extrair palavras-chave principais do título
+        $title = strip_tags($title);
+        $title = strtolower($title);
+        
+        // Remover palavras comuns (stop words)
+        $stop_words = ['o', 'a', 'os', 'as', 'de', 'da', 'do', 'das', 'dos', 'em', 'no', 'na', 'nos', 'nas', 'para', 'com', 'por', 'e', 'ou'];
+        $words = explode(' ', $title);
+        $keywords = [];
+        
+        foreach ($words as $word) {
+            $word = trim($word, '.,!?;:');
+            if (strlen($word) > 3 && !in_array($word, $stop_words)) {
+                $keywords[] = $word;
+            }
+        }
+        
+        // Retornar primeiras 2-3 palavras-chave
+        return implode(' ', array_slice($keywords, 0, 3));
+    }
+    
+    private function add_image_seo($image_id, $source_title) {
+        // Gerar alt text otimizado
+        $alt_text = $this->generate_image_alt($source_title);
+        
+        // Atualizar alt text
+        update_post_meta($image_id, '_wp_attachment_image_alt', $alt_text);
+        
+        // Atualizar título e descrição da imagem
+        wp_update_post([
+            'ID' => $image_id,
+            'post_title' => $alt_text,
+            'post_excerpt' => $this->generate_meta_description($source_title), // Caption
+            'post_content' => $source_title // Descrição
+        ]);
+        
+        error_log("IAP: SEO da imagem #{$image_id} configurado - Alt: {$alt_text}");
+    }
+    
+    private function generate_image_alt($title) {
+        // Criar alt text descritivo
+        $alt = strip_tags($title);
+        $alt = preg_replace('/\s+/', ' ', $alt);
+        $alt = trim($alt);
+        
+        // Limitar tamanho
+        if (strlen($alt) > 125) {
+            $alt = substr($alt, 0, 122) . '...';
+        }
+        
+        return $alt;
     }
     
     private function log_action($integration_id, $post_id, $action, $status, $message, $sources = null) {
