@@ -80,9 +80,8 @@ class IAP_Activator {
         self::migrate_existing_tables();
         self::insert_default_feeds();
         
-        if (!wp_next_scheduled('iap_run_integrations')) {
-            wp_schedule_event(time(), 'hourly', 'iap_run_integrations');
-        }
+        // Não criar agendamento global - cada integração tem seu próprio schedule
+        // Os schedules individuais são criados/atualizados ao salvar cada integração
     }
     
     private static function migrate_existing_tables() {

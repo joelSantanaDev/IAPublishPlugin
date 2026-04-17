@@ -46,17 +46,48 @@ class IAP_Integration_Manager {
         ];
         
         if (isset($data['id']) && !empty($data['id'])) {
-            $wpdb->update($table, $integration_data, ['id' => intval($data['id'])]);
-            return intval($data['id']);
+            $integration_id = intval($data['id']);
+            $wpdb->update($table, $integration_data, ['id' => $integration_id]);
         } else {
             $wpdb->insert($table, $integration_data);
-            return $wpdb->insert_id;
+            $integration_id = $wpdb->insert_id;
+        }
+        
+        // Atualizar agendamento individual desta integração
+        $this->schedule_integration($integration_id, $integration_data['schedule_frequency'], $integration_data['status']);
+        
+        return $integration_id;
+    }
+    
+    private function schedule_integration($integration_id, $frequency, $status) {
+        $hook = 'iap_run_integration_' . $integration_id;
+        
+        // Remover agendamento anterior
+        $timestamp = wp_next_scheduled($hook);
+        if ($timestamp) {
+            wp_unschedule_event($timestamp, $hook);
+        }
+        
+        // Se ativo, criar novo agendamento
+        if ($status === 'active') {
+            wp_schedule_event(time(), $frequency, $hook);
+            error_log("IAP: Agendamento criado para integração #{$integration_id} - Frequência: {$frequency}");
+        } else {
+            error_log("IAP: Agendamento removido para integração #{$integration_id} (inativa)");
         }
     }
     
     public function delete_integration($id) {
         global $wpdb;
         $table = $wpdb->prefix . 'iap_integrations';
+        
+        // Remover agendamento desta integração
+        $hook = 'iap_run_integration_' . $id;
+        $timestamp = wp_next_scheduled($hook);
+        if ($timestamp) {
+            wp_unschedule_event($timestamp, $hook);
+            error_log("IAP: Agendamento removido para integração #{$id} (deletada)");
+        }
         
         return $wpdb->delete($table, ['id' => intval($id)]);
     }

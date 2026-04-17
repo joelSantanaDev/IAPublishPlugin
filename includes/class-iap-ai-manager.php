@@ -354,7 +354,7 @@ class IAP_AI_Manager {
             'body' => json_encode([
                 'model' => (isset($config['model']) && !empty($config['model'])) ? $config['model'] : 'llama-3.3-70b-versatile',
                 'messages' => [
-                    ['role' => 'system', 'content' => 'Você é um jornalista especializado em criar notícias originais baseadas em múltiplas fontes.'],
+                    ['role' => 'system', 'content' => 'Você é um jornalista especializado em criar notícias originais baseadas em múltiplas fontes. Você gosta de criar listas, links internos, tabelas se necessário para enriquecer a leitura'],
                     ['role' => 'user', 'content' => $prompt]
                 ],
                 'temperature' => isset($config['temperature']) ? floatval($config['temperature']) : 0.7,

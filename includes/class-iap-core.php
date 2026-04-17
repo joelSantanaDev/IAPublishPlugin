@@ -45,7 +45,34 @@ class IAP_Core {
     }
     
     private function define_public_hooks() {
+        // Hook global (mantido para compatibilidade)
         $this->loader->add_action('iap_run_integrations', $this, 'run_scheduled_integrations');
+        
+        // Registrar hooks individuais para cada integração
+        $this->register_integration_hooks();
+    }
+    
+    private function register_integration_hooks() {
+        global $wpdb;
+        $table = $wpdb->prefix . 'iap_integrations';
+        $integrations = $wpdb->get_results("SELECT id FROM $table WHERE status = 'active'");
+        
+        foreach ($integrations as $integration) {
+            $hook = 'iap_run_integration_' . $integration->id;
+            $this->loader->add_action($hook, $this, 'run_single_integration');
+        }
+    }
+    
+    public function run_single_integration() {
+        // Extrair ID da integração do hook atual
+        $current_filter = current_filter();
+        preg_match('/iap_run_integration_(\d+)/', $current_filter, $matches);
+        
+        if (isset($matches[1])) {
+            $integration_id = intval($matches[1]);
+            $integration_manager = new IAP_Integration_Manager();
+            $integration_manager->run_integration($integration_id);
+        }
     }
     
     public function run_scheduled_integrations() {
