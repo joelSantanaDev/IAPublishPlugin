@@ -41,6 +41,8 @@ class IAP_Integration_Manager {
             'custom_prompt' => isset($data['custom_prompt']) ? sanitize_textarea_field($data['custom_prompt']) : '',
             'feed_items_count' => isset($data['feed_items_count']) ? intval($data['feed_items_count']) : 3,
             'feed_order' => isset($data['feed_order']) ? sanitize_text_field($data['feed_order']) : 'recent',
+            'fallback_image_id' => isset($data['fallback_image_id']) ? $data['fallback_image_id'] : null,
+            'post_status' => isset($data['post_status']) ? sanitize_text_field($data['post_status']) : 'draft',
             'status' => isset($data['status']) ? sanitize_text_field($data['status']) : 'active',
             'schedule_frequency' => isset($data['schedule_frequency']) ? sanitize_text_field($data['schedule_frequency']) : 'hourly'
         ];
@@ -131,15 +133,21 @@ class IAP_Integration_Manager {
         error_log('Title: ' . $post_data['title']);
         error_log('Content length: ' . strlen($post_data['content']));
         error_log('Content preview: ' . substr($post_data['content'], 0, 200));
+        error_log('Tags from AI: ' . implode(', ', $post_data['tags']));
         error_log('=== End AI Response ===');
         
-        // Gerar tags automaticamente
-        $tags = $this->generate_tags($post_data['title'], $post_data['content'], $feed_items);
+        // Usar tags da IA ou gerar como fallback
+        $tags = !empty($post_data['tags']) ? $post_data['tags'] : $this->generate_tags($post_data['title'], $post_data['content'], $feed_items);
+        
+        // Usar post_status configurado na integração (padrão: draft)
+        $post_status = !empty($integration->post_status) ? $integration->post_status : 'draft';
+        
+        error_log("IAP: Criando post com status: {$post_status}");
         
         $post_id = wp_insert_post([
             'post_title' => $post_data['title'],
             'post_content' => $post_data['content'],
-            'post_status' => 'draft',
+            'post_status' => $post_status,
             'post_category' => [$integration->category_id],
             'post_author' => get_current_user_id(),
             'tags_input' => $tags
@@ -150,8 +158,10 @@ class IAP_Integration_Manager {
             return ['success' => false, 'message' => $post_id->get_error_message()];
         }
         
+        error_log("IAP: Post #{$post_id} criado com status: {$post_status}");
+        
         // Tentar importar imagem destacada de um dos feeds
-        $featured_image_id = $this->import_featured_image($post_id, $feed_items);
+        $featured_image_id = $this->import_featured_image($post_id, $feed_items, $integration->fallback_image_id);
         
         // Adicionar meta SEO (Rank Math)
         $this->add_seo_meta($post_id, $post_data['title'], $post_data['content'], $featured_image_id, $tags);
@@ -213,12 +223,13 @@ class IAP_Integration_Manager {
         $prompt .= "- Tom jornalístico profissional\n";
         $prompt .= "- Combine as fontes de forma coerente\n";
         $prompt .= "- Conteúdo 100% original\n";
+        $prompt .= "- Sugira 5 tags relevantes (palavras-chave principais do tema)\n";
         
         if (!empty($custom_prompt)) {
             $prompt .= "\nPersonalização: " . $custom_prompt . "\n";
         }
         
-        $prompt .= "\nFormato:\nTÍTULO: [título]\n\nCONTEÚDO:\n[HTML com <h2>, <p>, <ul>, <strong>]";
+        $prompt .= "\nFormato:\nTÍTULO: [título]\n\nTAGS: [tag1, tag2, tag3, tag4, tag5]\n\nCONTEÚDO:\n[HTML com <h2>, <p>, <ul>, <strong>]";
         
         return $prompt;
     }
@@ -226,12 +237,21 @@ class IAP_Integration_Manager {
     private function parse_ai_response($content) {
         $title = '';
         $body = '';
+        $tags = [];
         
         // Tentar diferentes formatos de resposta
         
-        // Formato 1: TÍTULO: ... CONTEÚDO: ...
+        // Formato 1: TÍTULO: ... TAGS: ... CONTEÚDO: ...
         if (preg_match('/TÍTULO:\s*(.+?)(?:\n|$)/i', $content, $title_match)) {
             $title = trim($title_match[1]);
+            
+            // Extrair tags se existirem
+            if (preg_match('/TAGS:\s*(.+?)(?:\n|CONTEÚDO:)/is', $content, $tags_match)) {
+                $tags_string = trim($tags_match[1]);
+                // Separar por vírgula e limpar
+                $tags = array_map('trim', explode(',', $tags_string));
+                $tags = array_filter($tags); // Remover vazios
+            }
             
             if (preg_match('/CONTEÚDO:\s*(.+)/is', $content, $content_match)) {
                 $body = trim($content_match[1]);
@@ -275,7 +295,8 @@ class IAP_Integration_Manager {
         
         return [
             'title' => trim($title),
-            'content' => trim($body)
+            'content' => trim($body),
+            'tags' => $tags
         ];
     }
     
@@ -355,7 +376,7 @@ class IAP_Integration_Manager {
         return $info;
     }
     
-    private function import_featured_image($post_id, $feed_items) {
+    private function import_featured_image($post_id, $feed_items, $fallback_image_id = null) {
         // Procurar primeira imagem disponível nos feeds
         $image_url = null;
         $image_title = '';
@@ -368,8 +389,15 @@ class IAP_Integration_Manager {
             }
         }
         
+        // Se não encontrou imagem nos feeds, usar fallback
+        if (empty($image_url) && !empty($fallback_image_id)) {
+            error_log('IAP: Nenhuma imagem encontrada nos feeds, usando imagem fallback #' . $fallback_image_id);
+            set_post_thumbnail($post_id, $fallback_image_id);
+            return $fallback_image_id;
+        }
+        
         if (empty($image_url)) {
-            error_log('IAP: Nenhuma imagem encontrada nos feeds para o post #' . $post_id);
+            error_log('IAP: Nenhuma imagem encontrada nos feeds e sem fallback configurado para o post #' . $post_id);
             return null;
         }
         

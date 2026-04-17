@@ -187,7 +187,37 @@ if (!defined('ABSPATH')) {
                 </tr>
                 
                 <tr>
-                    <th><label for="integration-status">Status</label></th>
+                    <th><label for="integration-fallback-image">Imagem Fallback</label></th>
+                    <td>
+                        <input type="hidden" id="integration-fallback-image" name="fallback_image_id" value="">
+                        <button type="button" class="button" id="upload-fallback-image">Escolher Imagem</button>
+                        <button type="button" class="button" id="remove-fallback-image" style="display:none;">Remover Imagem</button>
+                        <div id="fallback-image-preview" style="margin-top:10px;"></div>
+                        <p class="description">
+                            Imagem padrão usada quando nenhuma imagem é encontrada nos feeds RSS.<br>
+                            <strong>Opcional:</strong> Se não configurar, posts sem imagem ficarão sem imagem destacada.
+                        </p>
+                    </td>
+                </tr>
+                
+                <tr>
+                    <th><label for="integration-post-status">Status de Publicação</label></th>
+                    <td>
+                        <select id="integration-post-status" name="post_status">
+                            <option value="draft">Rascunho</option>
+                            <option value="publish">Publicado</option>
+                            <option value="pending">Pendente de Revisão</option>
+                        </select>
+                        <p class="description">
+                            <strong>Rascunho:</strong> Posts criados como rascunho (requer revisão manual)<br>
+                            <strong>Publicado:</strong> Posts publicados automaticamente (visíveis no site)<br>
+                            <strong>Pendente:</strong> Posts aguardando aprovação
+                        </p>
+                    </td>
+                </tr>
+                
+                <tr>
+                    <th><label for="integration-status">Status da Integração</label></th>
                     <td>
                         <select id="integration-status" name="status">
                             <option value="active">Ativo</option>
@@ -217,7 +247,16 @@ if (!defined('ABSPATH')) {
 </div>
 
 <script>
-var iapIntegrations = <?php echo json_encode($integrations); ?>;
+var iapIntegrations = <?php 
+    // Adicionar URL da imagem fallback
+    $integrations_with_images = array_map(function($integration) {
+        if (!empty($integration->fallback_image_id)) {
+            $integration->fallback_image_url = wp_get_attachment_url($integration->fallback_image_id);
+        }
+        return $integration;
+    }, $integrations);
+    echo json_encode($integrations_with_images); 
+?>;
 var iapCategories = <?php echo json_encode($categories); ?>;
 var iapProviders = <?php echo json_encode($ai_providers); ?>;
 var iapFeeds = <?php echo json_encode($feeds); ?>;

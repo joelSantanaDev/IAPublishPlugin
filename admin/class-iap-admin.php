@@ -73,6 +73,9 @@ class IAP_Admin {
             return;
         }
         
+        // Enqueue WordPress Media Uploader
+        wp_enqueue_media();
+        
         wp_enqueue_script('ia-publish-admin', IAP_PLUGIN_URL . 'admin/js/admin.js', ['jquery'], $this->version, true);
         
         wp_localize_script('ia-publish-admin', 'iapAjax', [
@@ -143,6 +146,8 @@ class IAP_Admin {
             'custom_prompt' => isset($_POST['custom_prompt']) ? sanitize_textarea_field($_POST['custom_prompt']) : '',
             'feed_items_count' => isset($_POST['feed_items_count']) ? intval($_POST['feed_items_count']) : 3,
             'feed_order' => isset($_POST['feed_order']) ? sanitize_text_field($_POST['feed_order']) : 'recent',
+            'fallback_image_id' => isset($_POST['fallback_image_id']) && !empty($_POST['fallback_image_id']) ? intval($_POST['fallback_image_id']) : null,
+            'post_status' => isset($_POST['post_status']) ? sanitize_text_field($_POST['post_status']) : 'draft',
             'status' => sanitize_text_field($_POST['status']),
             'schedule_frequency' => sanitize_text_field($_POST['schedule_frequency'])
         ];

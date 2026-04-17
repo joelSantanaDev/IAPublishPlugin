@@ -26,6 +26,8 @@ class IAP_Activator {
             custom_prompt longtext,
             feed_items_count int(11) DEFAULT 3,
             feed_order varchar(20) DEFAULT 'recent',
+            fallback_image_id bigint(20) DEFAULT NULL,
+            post_status varchar(20) DEFAULT 'draft',
             status varchar(20) DEFAULT 'active',
             schedule_frequency varchar(50) DEFAULT 'hourly',
             last_run datetime,
@@ -106,6 +108,18 @@ class IAP_Activator {
         $column_exists = $wpdb->get_results("SHOW COLUMNS FROM `{$table_integrations}` LIKE 'feed_order'");
         if (empty($column_exists)) {
             $wpdb->query("ALTER TABLE `{$table_integrations}` ADD COLUMN `feed_order` VARCHAR(20) DEFAULT 'recent' AFTER `feed_items_count`");
+        }
+        
+        // Verificar e adicionar coluna fallback_image_id
+        $column_exists = $wpdb->get_results("SHOW COLUMNS FROM `{$table_integrations}` LIKE 'fallback_image_id'");
+        if (empty($column_exists)) {
+            $wpdb->query("ALTER TABLE `{$table_integrations}` ADD COLUMN `fallback_image_id` BIGINT(20) DEFAULT NULL AFTER `feed_order`");
+        }
+        
+        // Verificar e adicionar coluna post_status
+        $column_exists = $wpdb->get_results("SHOW COLUMNS FROM `{$table_integrations}` LIKE 'post_status'");
+        if (empty($column_exists)) {
+            $wpdb->query("ALTER TABLE `{$table_integrations}` ADD COLUMN `post_status` VARCHAR(20) DEFAULT 'draft' AFTER `fallback_image_id`");
         }
         
         // Verificar e adicionar coluna sources na tabela de logs

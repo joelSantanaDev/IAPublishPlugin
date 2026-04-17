@@ -18,9 +18,52 @@
         const $modal = $('#iap-integration-modal');
         const $form = $('#iap-integration-form');
         
+        // Media Uploader para imagem fallback
+        let mediaUploader;
+        
+        $('#upload-fallback-image').on('click', function(e) {
+            e.preventDefault();
+            
+            if (mediaUploader) {
+                mediaUploader.open();
+                return;
+            }
+            
+            mediaUploader = wp.media({
+                title: 'Escolher Imagem Fallback',
+                button: {
+                    text: 'Usar esta imagem'
+                },
+                multiple: false,
+                library: {
+                    type: 'image'
+                }
+            });
+            
+            mediaUploader.on('select', function() {
+                const attachment = mediaUploader.state().get('selection').first().toJSON();
+                $('#integration-fallback-image').val(attachment.id);
+                $('#fallback-image-preview').html(
+                    '<img src="' + attachment.url + '" style="max-width:200px;height:auto;border:1px solid #ddd;padding:5px;">'
+                );
+                $('#remove-fallback-image').show();
+            });
+            
+            mediaUploader.open();
+        });
+        
+        $('#remove-fallback-image').on('click', function(e) {
+            e.preventDefault();
+            $('#integration-fallback-image').val('');
+            $('#fallback-image-preview').html('');
+            $(this).hide();
+        });
+        
         $('#iap-add-integration').on('click', function() {
             $form[0].reset();
             $('#integration-id').val('');
+            $('#fallback-image-preview').html('');
+            $('#remove-fallback-image').hide();
             $('#iap-modal-title').text('Nova Integração');
             $modal.show();
         });
@@ -50,6 +93,21 @@
                 $('#integration-custom-prompt').val(integration.custom_prompt || '');
                 $('#integration-items-count').val(integration.feed_items_count || 3);
                 $('#integration-feed-order').val(integration.feed_order || 'recent');
+                
+                // Carregar imagem fallback se existir
+                if (integration.fallback_image_id && integration.fallback_image_url) {
+                    $('#integration-fallback-image').val(integration.fallback_image_id);
+                    $('#fallback-image-preview').html(
+                        '<img src="' + integration.fallback_image_url + '" style="max-width:200px;height:auto;border:1px solid #ddd;padding:5px;">'
+                    );
+                    $('#remove-fallback-image').show();
+                } else {
+                    $('#integration-fallback-image').val('');
+                    $('#fallback-image-preview').html('');
+                    $('#remove-fallback-image').hide();
+                }
+                
+                $('#integration-post-status').val(integration.post_status || 'draft');
                 $('#integration-status').val(integration.status);
                 $('#integration-schedule').val(integration.schedule_frequency);
                 
@@ -88,6 +146,8 @@
                 custom_prompt: $('#integration-custom-prompt').val(),
                 feed_items_count: $('#integration-items-count').val(),
                 feed_order: $('#integration-feed-order').val(),
+                fallback_image_id: $('#integration-fallback-image').val(),
+                post_status: $('#integration-post-status').val(),
                 status: $('#integration-status').val(),
                 schedule_frequency: $('#integration-schedule').val()
             };
