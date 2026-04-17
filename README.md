@@ -114,6 +114,45 @@ Acesse **IA Publish > Logs** para visualizar:
 - Erros e mensagens
 - Status de cada ação
 
+## 🎯 Integração com Rank Math SEO
+
+O plugin se integra automaticamente com o **Rank Math SEO** para otimizar seus posts:
+
+### Recursos SEO Automáticos:
+
+**Para Posts:**
+- ✅ Meta Título (máx 60 caracteres)
+- ✅ Meta Descrição (máx 160 caracteres)
+- ✅ Focus Keyword (extraído do título)
+- ✅ Tags Automáticas (até 10 relevantes)
+- ✅ Open Graph (Facebook/Twitter)
+- ✅ Robots Meta (index, follow)
+- ✅ Pillar Content (marcado automaticamente)
+
+**Para Imagens:**
+- ✅ Alt Text otimizado
+- ✅ Título descritivo
+- ✅ Legenda automática
+- ✅ Descrição completa
+
+### Como Funciona:
+
+1. **Post criado** → IA gera conteúdo
+2. **Tags extraídas** → Palavras-chave do título e conteúdo
+3. **SEO aplicado** → Rank Math recebe todos os meta dados
+4. **Imagem otimizada** → Alt text e descrições adicionados
+5. **Pronto para ranquear!** 🚀
+
+### Sem Rank Math?
+
+Se o Rank Math não estiver instalado:
+- ✅ Plugin funciona normalmente
+- ✅ Posts são criados com tags
+- ✅ Imagens têm alt text
+- ❌ Meta dados SEO não são adicionados (mas não causa erro)
+
+**Recomendamos instalar o Rank Math para SEO completo!**
+
 ## 🛠️ Desenvolvimento
 
 ### Estrutura de Arquivos
@@ -155,6 +194,27 @@ GPL v2 or later
 Joel Santana - [GitHub](https://github.com/joelSantanaDev)
 
 ## 🔄 Changelog
+
+### 1.1.0 (2026-04-17)
+- ✅ **SEO Automático com Rank Math**
+  - Meta título otimizado (60 caracteres)
+  - Meta descrição automática (160 caracteres)
+  - Focus keyword extraído do título
+  - Open Graph para redes sociais
+  - Pillar content configurado
+- ✅ **Tags Automáticas**
+  - Até 10 tags relevantes por post
+  - Extração inteligente de palavras-chave
+  - Filtro de stop words em português
+  - Ordenação por relevância
+- ✅ **SEO para Imagens**
+  - Alt text otimizado
+  - Título e descrição automáticos
+  - Acessibilidade completa
+- ✅ **Agendamento Individual**
+  - Cada integração com seu próprio cron job
+  - Respeita frequência configurada
+  - Logs de agendamento detalhados
 
 ### 1.0.0 (2026-04-16)
 - ✅ Lançamento inicial

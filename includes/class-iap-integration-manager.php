@@ -154,7 +154,7 @@ class IAP_Integration_Manager {
         $featured_image_id = $this->import_featured_image($post_id, $feed_items);
         
         // Adicionar meta SEO (Rank Math)
-        $this->add_seo_meta($post_id, $post_data['title'], $post_data['content'], $featured_image_id);
+        $this->add_seo_meta($post_id, $post_data['title'], $post_data['content'], $featured_image_id, $tags);
         
         // Marcar todos os itens usados como processados
         foreach ($feed_items as $item) {
@@ -404,7 +404,7 @@ class IAP_Integration_Manager {
         }
     }
     
-    private function add_seo_meta($post_id, $title, $content, $featured_image_id = null) {
+    private function add_seo_meta($post_id, $title, $content, $featured_image_id = null, $tags = []) {
         // Verificar se Rank Math está ativo
         if (!class_exists('RankMath')) {
             error_log('IAP: Rank Math não está instalado/ativo - pulando SEO');
@@ -425,6 +425,13 @@ class IAP_Integration_Manager {
         update_post_meta($post_id, 'rank_math_description', $meta_description);
         update_post_meta($post_id, 'rank_math_focus_keyword', $focus_keyword);
         
+        // Adicionar tags como pillar content (conteúdo pilar) no Rank Math
+        if (!empty($tags)) {
+            update_post_meta($post_id, 'rank_math_pillar_content', 'on');
+            // Salvar tags também como meta para uso futuro do Rank Math
+            update_post_meta($post_id, 'rank_math_internal_links_processed', '1');
+        }
+        
         // Configurações adicionais do Rank Math
         update_post_meta($post_id, 'rank_math_robots', ['index', 'follow']);
         update_post_meta($post_id, 'rank_math_advanced_robots', ['noimageindex' => 'off', 'noarchive' => 'off', 'nosnippet' => 'off']);
@@ -439,7 +446,7 @@ class IAP_Integration_Manager {
             update_post_meta($post_id, 'rank_math_twitter_image_id', $featured_image_id);
         }
         
-        error_log("IAP: SEO meta adicionado ao post #{$post_id} - Keyword: {$focus_keyword}");
+        error_log("IAP: SEO meta adicionado ao post #{$post_id} - Keyword: {$focus_keyword} - Tags: " . implode(', ', $tags));
     }
     
     private function generate_meta_title($title) {
@@ -517,6 +524,91 @@ class IAP_Integration_Manager {
         }
         
         return $alt;
+    }
+    
+    private function generate_tags($title, $content, $feed_items) {
+        $tags = [];
+        
+        // 1. Extrair palavras-chave do título
+        $title_keywords = $this->extract_keywords_from_text($title, 3);
+        $tags = array_merge($tags, $title_keywords);
+        
+        // 2. Extrair palavras-chave do conteúdo
+        $content_keywords = $this->extract_keywords_from_text($content, 5);
+        $tags = array_merge($tags, $content_keywords);
+        
+        // 3. Extrair tags dos títulos das fontes
+        foreach ($feed_items as $item) {
+            $source_keywords = $this->extract_keywords_from_text($item['title'], 2);
+            $tags = array_merge($tags, $source_keywords);
+        }
+        
+        // 4. Remover duplicatas e limitar a 10 tags
+        $tags = array_unique($tags);
+        $tags = array_filter($tags, function($tag) {
+            return strlen($tag) > 3; // Mínimo 4 caracteres
+        });
+        
+        // Ordenar por relevância (mais frequentes primeiro)
+        $tag_counts = array_count_values($tags);
+        arsort($tag_counts);
+        $tags = array_keys($tag_counts);
+        
+        // Limitar a 10 tags
+        $tags = array_slice($tags, 0, 10);
+        
+        error_log('IAP: Tags geradas: ' . implode(', ', $tags));
+        
+        return $tags;
+    }
+    
+    private function extract_keywords_from_text($text, $limit = 5) {
+        // Limpar texto
+        $text = strip_tags($text);
+        $text = strtolower($text);
+        $text = preg_replace('/[^\p{L}\p{N}\s]/u', ' ', $text); // Remover pontuação
+        $text = preg_replace('/\s+/', ' ', $text);
+        
+        // Stop words em português
+        $stop_words = [
+            'o', 'a', 'os', 'as', 'um', 'uma', 'uns', 'umas',
+            'de', 'da', 'do', 'das', 'dos', 'em', 'no', 'na', 'nos', 'nas',
+            'por', 'para', 'com', 'sem', 'sob', 'sobre',
+            'e', 'ou', 'mas', 'porém', 'contudo',
+            'que', 'qual', 'quais', 'quando', 'onde', 'como',
+            'este', 'esta', 'esse', 'essa', 'aquele', 'aquela',
+            'seu', 'sua', 'meu', 'minha', 'nosso', 'nossa',
+            'ser', 'estar', 'ter', 'haver', 'fazer',
+            'muito', 'mais', 'menos', 'bem', 'mal',
+            'já', 'ainda', 'também', 'até', 'depois', 'antes',
+            'hoje', 'ontem', 'amanhã', 'agora',
+            'novo', 'nova', 'novos', 'novas',
+            'primeiro', 'primeira', 'segundo', 'segunda',
+            'ano', 'anos', 'dia', 'dias', 'vez', 'vezes'
+        ];
+        
+        // Extrair palavras
+        $words = explode(' ', $text);
+        $keywords = [];
+        
+        foreach ($words as $word) {
+            $word = trim($word);
+            
+            // Filtrar: mínimo 4 caracteres, não é stop word, não é número
+            if (strlen($word) >= 4 && !in_array($word, $stop_words) && !is_numeric($word)) {
+                $keywords[] = ucfirst($word); // Capitalizar primeira letra
+            }
+        }
+        
+        // Contar frequência e pegar as mais comuns
+        if (empty($keywords)) {
+            return [];
+        }
+        
+        $keyword_counts = array_count_values($keywords);
+        arsort($keyword_counts);
+        
+        return array_slice(array_keys($keyword_counts), 0, $limit);
     }
     
     private function log_action($integration_id, $post_id, $action, $status, $message, $sources = null) {
