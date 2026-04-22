@@ -144,9 +144,17 @@ class IAP_Integration_Manager {
         
         error_log("IAP: Criando post com status: {$post_status}");
         
+        // Usar meta_description como excerpt se disponível
+        $excerpt = !empty($post_data['meta_description']) ? $post_data['meta_description'] : '';
+        
+        if (!empty($excerpt)) {
+            error_log("IAP: Usando excerpt: " . substr($excerpt, 0, 100) . "...");
+        }
+        
         $post_id = wp_insert_post([
             'post_title' => $post_data['title'],
             'post_content' => $post_data['content'],
+            'post_excerpt' => $excerpt,
             'post_status' => $post_status,
             'post_category' => [$integration->category_id],
             'post_author' => get_current_user_id(),
