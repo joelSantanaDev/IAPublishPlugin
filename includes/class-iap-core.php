@@ -42,6 +42,7 @@ class IAP_Core {
         $this->loader->add_action('wp_ajax_iap_get_debug_log', $plugin_admin, 'ajax_get_debug_log');
         $this->loader->add_action('wp_ajax_iap_clear_debug_log', $plugin_admin, 'ajax_clear_debug_log');
         $this->loader->add_action('wp_ajax_iap_list_gemini_models', $plugin_admin, 'ajax_list_gemini_models');
+        $this->loader->add_action('wp_ajax_iap_save_settings', $plugin_admin, 'ajax_save_settings');
     }
     
     private function define_public_hooks() {

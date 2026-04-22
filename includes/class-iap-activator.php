@@ -15,6 +15,7 @@ class IAP_Activator {
         $table_feeds = $wpdb->prefix . 'iap_feeds';
         $table_logs = $wpdb->prefix . 'iap_logs';
         $table_processed = $wpdb->prefix . 'iap_processed_items';
+        $table_settings = $wpdb->prefix . 'iap_settings';
         
         $sql_integrations = "CREATE TABLE IF NOT EXISTS $table_integrations (
             id bigint(20) NOT NULL AUTO_INCREMENT,
@@ -73,14 +74,26 @@ class IAP_Activator {
             KEY idx_integration_id (integration_id)
         ) $charset_collate;";
         
+        $sql_settings = "CREATE TABLE IF NOT EXISTS $table_settings (
+            id bigint(20) NOT NULL AUTO_INCREMENT,
+            setting_key varchar(255) NOT NULL,
+            setting_value longtext,
+            created_at datetime DEFAULT CURRENT_TIMESTAMP,
+            updated_at datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+            PRIMARY KEY (id),
+            UNIQUE KEY unique_setting_key (setting_key)
+        ) $charset_collate;";
+        
         require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
         dbDelta($sql_integrations);
         dbDelta($sql_feeds);
         dbDelta($sql_logs);
         dbDelta($sql_processed);
+        dbDelta($sql_settings);
         
         self::migrate_existing_tables();
         self::insert_default_feeds();
+        self::insert_default_settings();
         
         // Não criar agendamento global - cada integração tem seu próprio schedule
         // Os schedules individuais são criados/atualizados ao salvar cada integração
@@ -149,6 +162,42 @@ class IAP_Activator {
             if (!$exists) {
                 $wpdb->insert($table_feeds, $feed);
             }
+        }
+    }
+    
+    private static function insert_default_settings() {
+        global $wpdb;
+        $table_settings = $wpdb->prefix . 'iap_settings';
+        
+        // Prompt global padrão
+        $default_prompt = "Instruções:\n";
+        $default_prompt .= "- Crie um título original e atraente\n";
+        $default_prompt .= "- Sugira 5 tags relevantes (palavras-chave principais do tema)\n";
+        $default_prompt .= "- Escreva o conteúdo com mínimo 600 palavras em HTML\n";
+        $default_prompt .= "- Use títulos HTML(H1,H2,H3) para seções, <p> para parágrafos, <ul>/<ol> para listas, <strong> para destaques. Preciso que a semântica pro SEO seja importante.\n";
+        $default_prompt .= "- Tom jornalístico profissional\n";
+        $default_prompt .= "- Combine as fontes de forma coerente caso você consuma mais de 1 feed\n";
+        $default_prompt .= "- Conteúdo 100% original, mas não viaje tanto na criatividade.\n\n";
+        $default_prompt .= "⚠️ IMPORTANTE - Formato de Resposta:\n\n";
+        $default_prompt .= "TÍTULO: [apenas o título, sem repetir no conteúdo]\n\n";
+        $default_prompt .= "META_TÍTULO: [versão otimizada do título para SEO, máximo 60 caracteres]\n\n";
+        $default_prompt .= "META_DESCRIÇÃO: [resumo atraente do conteúdo para SEO, máximo 160 caracteres]\n\n";
+        $default_prompt .= "FOCUS_KEYWORD: [palavra-chave principal do artigo, 1-3 palavras]\n\n";
+        $default_prompt .= "TAGS: [tag1, tag2, tag3, tag4, tag5]\n\n";
+        $default_prompt .= "CONTEÚDO:\n";
+        $default_prompt .= "[Comece direto com o HTML do conteúdo. NÃO repita o título aqui. NÃO inclua as tags aqui. Apenas o corpo do artigo em HTML]";
+        
+        // Verificar se já existe
+        $exists = $wpdb->get_var($wpdb->prepare(
+            "SELECT id FROM $table_settings WHERE setting_key = %s",
+            'global_prompt'
+        ));
+        
+        if (!$exists) {
+            $wpdb->insert($table_settings, [
+                'setting_key' => 'global_prompt',
+                'setting_value' => $default_prompt
+            ]);
         }
     }
 }

@@ -213,6 +213,21 @@ class IAP_Integration_Manager {
     }
     
     private function build_prompt($feed_items, $custom_prompt = '') {
+        global $wpdb;
+        
+        // Buscar prompt global do banco de dados
+        $table_settings = $wpdb->prefix . 'iap_settings';
+        $global_prompt = $wpdb->get_var($wpdb->prepare(
+            "SELECT setting_value FROM $table_settings WHERE setting_key = %s",
+            'global_prompt'
+        ));
+        
+        // Se não encontrar, usar prompt padrão
+        if (empty($global_prompt)) {
+            $global_prompt = $this->get_default_prompt();
+        }
+        
+        // Construir prompt com as fontes
         $prompt = "Crie uma notícia original baseada nestas fontes:\n\n";
         
         foreach ($feed_items as $index => $item) {
@@ -225,29 +240,36 @@ class IAP_Integration_Manager {
             $prompt .= "Resumo: {$content}\n\n";
         }
         
-        $prompt .= "Instruções:\n";
-        $prompt .= "- Crie um título original e atraente\n";
-        $prompt .= "- Sugira 5 tags relevantes (palavras-chave principais do tema)\n";
-        $prompt .= "- Escreva o conteúdo com mínimo 600 palavras em HTML\n";
-        $prompt .= "- Use títulos HTML(H1,H2,H3) para seções, <p> para parágrafos, <ul>/<ol> para listas, <strong> para destaques. Preciso que a semântica pro SEO seja importante.\n";
-        $prompt .= "- Tom jornalístico profissional\n";
-        $prompt .= "- Combine as fontes de forma coerente caso você consuma mais de 1 feed\n";
-        $prompt .= "- Conteúdo 100% original, mas não viaje tanto na criatividade.\n";
+        // Adicionar prompt global
+        $prompt .= $global_prompt;
         
+        // Adicionar personalização da integração se houver
         if (!empty($custom_prompt)) {
-            $prompt .= "\nPersonalização: " . $custom_prompt . "\n";
+            $prompt .= "\n\nPersonalização Adicional da Integração:\n" . $custom_prompt;
         }
         
-        $prompt .= "\n⚠️ IMPORTANTE - Formato de Resposta:\n\n";
-        $prompt .= "TÍTULO: [apenas o título, sem repetir no conteúdo]\n\n";
-        $prompt .= "META_TÍTULO: [versão otimizada do título para SEO, máximo 60 caracteres]\n\n";
-        $prompt .= "META_DESCRIÇÃO: [resumo atraente do conteúdo para SEO, máximo 160 caracteres]\n\n";
-        $prompt .= "FOCUS_KEYWORD: [palavra-chave principal do artigo, 1-3 palavras]\n\n";
-        $prompt .= "TAGS: [tag1, tag2, tag3, tag4, tag5]\n\n";
-        $prompt .= "CONTEÚDO:\n";
-        $prompt .= "[Comece direto com o HTML do conteúdo. NÃO repita o título aqui. NÃO inclua as tags aqui. Apenas o corpo do artigo em HTML]";
-        
         return $prompt;
+    }
+    
+    private function get_default_prompt() {
+        $default = "Instruções:\n";
+        $default .= "- Crie um título original e atraente\n";
+        $default .= "- Sugira 5 tags relevantes (palavras-chave principais do tema)\n";
+        $default .= "- Escreva o conteúdo com mínimo 600 palavras em HTML\n";
+        $default .= "- Use títulos HTML(H1,H2,H3) para seções, <p> para parágrafos, <ul>/<ol> para listas, <strong> para destaques. Preciso que a semântica pro SEO seja importante.\n";
+        $default .= "- Tom jornalístico profissional\n";
+        $default .= "- Combine as fontes de forma coerente caso você consuma mais de 1 feed\n";
+        $default .= "- Conteúdo 100% original, mas não viaje tanto na criatividade.\n\n";
+        $default .= "⚠️ IMPORTANTE - Formato de Resposta:\n\n";
+        $default .= "TÍTULO: [apenas o título, sem repetir no conteúdo]\n\n";
+        $default .= "META_TÍTULO: [versão otimizada do título para SEO, máximo 60 caracteres]\n\n";
+        $default .= "META_DESCRIÇÃO: [resumo atraente do conteúdo para SEO, máximo 160 caracteres]\n\n";
+        $default .= "FOCUS_KEYWORD: [palavra-chave principal do artigo, 1-3 palavras]\n\n";
+        $default .= "TAGS: [tag1, tag2, tag3, tag4, tag5]\n\n";
+        $default .= "CONTEÚDO:\n";
+        $default .= "[Comece direto com o HTML do conteúdo. NÃO repita o título aqui. NÃO inclua as tags aqui. Apenas o corpo do artigo em HTML]";
+        
+        return $default;
     }
     
     private function parse_ai_response($content) {

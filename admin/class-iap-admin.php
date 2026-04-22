@@ -58,6 +58,15 @@ class IAP_Admin {
             'ia-publish-debug',
             [$this, 'display_debug_page']
         );
+        
+        add_submenu_page(
+            'ia-publish-plugin',
+            'Configurações',
+            'Configurações',
+            'manage_options',
+            'ia-publish-settings',
+            [$this, 'display_settings_page']
+        );
     }
     
     public function enqueue_styles() {
@@ -116,6 +125,19 @@ class IAP_Admin {
         $logs = $wpdb->get_results("SELECT * FROM $table ORDER BY created_at DESC LIMIT 100");
         
         include IAP_PLUGIN_DIR . 'admin/views/logs.php';
+    }
+    
+    public function display_settings_page() {
+        global $wpdb;
+        $table = $wpdb->prefix . 'iap_settings';
+        
+        // Buscar prompt global
+        $global_prompt = $wpdb->get_var($wpdb->prepare(
+            "SELECT setting_value FROM $table WHERE setting_key = %s",
+            'global_prompt'
+        ));
+        
+        include IAP_PLUGIN_DIR . 'admin/views/settings.php';
     }
     
     public function display_debug_page() {
@@ -395,9 +417,42 @@ class IAP_Admin {
             }
             
             wp_send_json_success(['models' => $models_list]);
-            
         } catch (Exception $e) {
             wp_send_json_error(['message' => 'Erro: ' . $e->getMessage()]);
         }
+    }
+    
+    public function ajax_save_settings() {
+        check_ajax_referer('iap_ajax_nonce', 'nonce');
+        
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error(['message' => 'Permissão negada']);
+        }
+        
+        global $wpdb;
+        $table = $wpdb->prefix . 'iap_settings';
+        
+        $global_prompt = isset($_POST['global_prompt']) ? wp_kses_post($_POST['global_prompt']) : '';
+        
+        // Verificar se já existe
+        $exists = $wpdb->get_var($wpdb->prepare(
+            "SELECT id FROM $table WHERE setting_key = %s",
+            'global_prompt'
+        ));
+        
+        if ($exists) {
+            $wpdb->update(
+                $table,
+                ['setting_value' => $global_prompt],
+                ['setting_key' => 'global_prompt']
+            );
+        } else {
+            $wpdb->insert($table, [
+                'setting_key' => 'global_prompt',
+                'setting_value' => $global_prompt
+            ]);
+        }
+        
+        wp_send_json_success(['message' => 'Configurações salvas com sucesso!']);
     }
 }
