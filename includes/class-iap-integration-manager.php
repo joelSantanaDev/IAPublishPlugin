@@ -168,6 +168,9 @@ class IAP_Integration_Manager {
         
         error_log("IAP: Post #{$post_id} criado com status: {$post_status}");
         
+        // Adicionar meta dados sobre geração por IA e fontes
+        $this->add_ai_generation_meta($post_id, $feed_items, $integration);
+        
         // Tentar importar imagem destacada de um dos feeds
         $featured_image_id = $this->import_featured_image($post_id, $feed_items, $integration->fallback_image_id);
         
@@ -497,6 +500,38 @@ class IAP_Integration_Manager {
             error_log('IAP: Falha ao definir imagem destacada para o post #' . $post_id);
             return null;
         }
+    }
+    
+    private function add_ai_generation_meta($post_id, $feed_items, $integration) {
+        // Marcar que o post foi gerado por IA
+        update_post_meta($post_id, '_iap_generated_by_ai', true);
+        update_post_meta($post_id, '_iap_generation_date', current_time('mysql'));
+        update_post_meta($post_id, '_iap_integration_id', $integration->id);
+        update_post_meta($post_id, '_iap_integration_name', $integration->name);
+        update_post_meta($post_id, '_iap_ai_provider', $integration->ai_provider);
+        
+        // Preparar array de fontes
+        $sources = [];
+        foreach ($feed_items as $item) {
+            $sources[] = [
+                'feed_name' => $item['feed_name'],
+                'feed_id' => $item['feed_id'],
+                'title' => $item['title'],
+                'link' => $item['link'],
+                'date' => isset($item['date']) ? $item['date'] : ''
+            ];
+        }
+        
+        // Salvar fontes como JSON
+        update_post_meta($post_id, '_iap_sources', json_encode($sources, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
+        
+        // Salvar também como array serializado (para compatibilidade)
+        update_post_meta($post_id, '_iap_sources_array', $sources);
+        
+        // Contador de fontes
+        update_post_meta($post_id, '_iap_sources_count', count($sources));
+        
+        error_log("IAP: Meta dados de IA adicionados ao post #{$post_id} - " . count($sources) . " fonte(s)");
     }
     
     private function add_seo_meta($post_id, $title, $content, $featured_image_id = null, $tags = [], $ai_meta_title = '', $ai_meta_description = '', $ai_focus_keyword = '') {
