@@ -535,12 +535,6 @@ class IAP_Integration_Manager {
     }
     
     private function add_seo_meta($post_id, $title, $content, $featured_image_id = null, $tags = [], $ai_meta_title = '', $ai_meta_description = '', $ai_focus_keyword = '') {
-        // Verificar se Rank Math está ativo
-        if (!class_exists('RankMath')) {
-            error_log('IAP: Rank Math não está instalado/ativo - pulando SEO');
-            return;
-        }
-        
         // Usar dados da IA se disponíveis, senão gerar
         $meta_title = !empty($ai_meta_title) ? $ai_meta_title : $this->generate_meta_title($title);
         $meta_description = !empty($ai_meta_description) ? $ai_meta_description : $this->generate_meta_description($content);
@@ -549,23 +543,51 @@ class IAP_Integration_Manager {
         // Log para debug
         error_log("IAP: SEO Meta - Título: {$meta_title} | Descrição: {$meta_description} | Keyword: {$focus_keyword}");
         
+        // Detectar qual plugin SEO está ativo
+        $seo_plugin = $this->detect_seo_plugin();
+        
+        if ($seo_plugin === 'rankmath') {
+            $this->add_rankmath_meta($post_id, $meta_title, $meta_description, $focus_keyword, $featured_image_id, $tags);
+        } elseif ($seo_plugin === 'yoast') {
+            $this->add_yoast_meta($post_id, $meta_title, $meta_description, $focus_keyword, $featured_image_id, $tags);
+        } else {
+            error_log('IAP: Nenhum plugin SEO suportado detectado (Rank Math ou Yoast SEO)');
+        }
+        
+        error_log("IAP: SEO meta adicionado ao post #{$post_id} via {$seo_plugin} - Keyword: {$focus_keyword}");
+    }
+    
+    private function detect_seo_plugin() {
+        // Verificar Rank Math
+        if (class_exists('RankMath')) {
+            return 'rankmath';
+        }
+        
+        // Verificar Yoast SEO
+        if (defined('WPSEO_VERSION')) {
+            return 'yoast';
+        }
+        
+        return null;
+    }
+    
+    private function add_rankmath_meta($post_id, $meta_title, $meta_description, $focus_keyword, $featured_image_id, $tags) {
         // Salvar meta dados do Rank Math
         update_post_meta($post_id, 'rank_math_title', $meta_title);
         update_post_meta($post_id, 'rank_math_description', $meta_description);
         update_post_meta($post_id, 'rank_math_focus_keyword', $focus_keyword);
         
-        // Adicionar tags como pillar content (conteúdo pilar) no Rank Math
+        // Adicionar tags como pillar content
         if (!empty($tags)) {
             update_post_meta($post_id, 'rank_math_pillar_content', 'on');
-            // Salvar tags também como meta para uso futuro do Rank Math
             update_post_meta($post_id, 'rank_math_internal_links_processed', '1');
         }
         
-        // Configurações adicionais do Rank Math
+        // Configurações adicionais
         update_post_meta($post_id, 'rank_math_robots', ['index', 'follow']);
         update_post_meta($post_id, 'rank_math_advanced_robots', ['noimageindex' => 'off', 'noarchive' => 'off', 'nosnippet' => 'off']);
         
-        // Se tem imagem destacada, adicionar Open Graph
+        // Open Graph
         if ($featured_image_id) {
             update_post_meta($post_id, 'rank_math_facebook_enable_image_overlay', 'off');
             update_post_meta($post_id, 'rank_math_facebook_image', wp_get_attachment_url($featured_image_id));
@@ -575,7 +597,37 @@ class IAP_Integration_Manager {
             update_post_meta($post_id, 'rank_math_twitter_image_id', $featured_image_id);
         }
         
-        error_log("IAP: SEO meta adicionado ao post #{$post_id} - Keyword: {$focus_keyword} - Tags: " . implode(', ', $tags));
+        error_log("IAP: Rank Math SEO meta adicionado");
+    }
+    
+    private function add_yoast_meta($post_id, $meta_title, $meta_description, $focus_keyword, $featured_image_id, $tags) {
+        // Salvar meta dados do Yoast SEO
+        update_post_meta($post_id, '_yoast_wpseo_title', $meta_title);
+        update_post_meta($post_id, '_yoast_wpseo_metadesc', $meta_description);
+        update_post_meta($post_id, '_yoast_wpseo_focuskw', $focus_keyword);
+        
+        // Configurações de indexação
+        update_post_meta($post_id, '_yoast_wpseo_meta-robots-noindex', '0');
+        update_post_meta($post_id, '_yoast_wpseo_meta-robots-nofollow', '0');
+        
+        // Cornerstone content (equivalente ao pillar content)
+        if (!empty($tags)) {
+            update_post_meta($post_id, '_yoast_wpseo_is_cornerstone', '1');
+        }
+        
+        // Open Graph
+        if ($featured_image_id) {
+            $image_url = wp_get_attachment_url($featured_image_id);
+            update_post_meta($post_id, '_yoast_wpseo_opengraph-image', $image_url);
+            update_post_meta($post_id, '_yoast_wpseo_opengraph-image-id', $featured_image_id);
+            update_post_meta($post_id, '_yoast_wpseo_twitter-image', $image_url);
+            update_post_meta($post_id, '_yoast_wpseo_twitter-image-id', $featured_image_id);
+        }
+        
+        // Breadcrumbs title
+        update_post_meta($post_id, '_yoast_wpseo_bctitle', $meta_title);
+        
+        error_log("IAP: Yoast SEO meta adicionado");
     }
     
     private function generate_meta_title($title) {

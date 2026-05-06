@@ -27,6 +27,18 @@ require_once IAP_PLUGIN_DIR . 'includes/class-iap-core.php';
 register_activation_hook(__FILE__, ['IAP_Activator', 'activate']);
 register_deactivation_hook(__FILE__, ['IAP_Deactivator', 'deactivate']);
 
+/**
+ * Load plugin textdomain for internationalization
+ */
+function iap_load_textdomain() {
+    load_plugin_textdomain(
+        'ia-publish-plugin',
+        false,
+        dirname(plugin_basename(__FILE__)) . '/languages/'
+    );
+}
+add_action('plugins_loaded', 'iap_load_textdomain');
+
 function run_ia_publish_plugin() {
     $plugin = new IAP_Core();
     $plugin->run();
